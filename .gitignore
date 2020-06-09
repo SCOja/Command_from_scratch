@@ -1,0 +1,5 @@
+#Python
+.idea/workspace
+.idea/
+.__pycache__
+.venv
