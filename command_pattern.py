@@ -2,7 +2,7 @@ from mongodb import MongoDb
 import time
 
 
-class Receiver:
+class Repository:
     """
     Receiver mongodb functions: get, update, restore.
     Need to change 2 in two ways? get and update
@@ -30,11 +30,11 @@ class Receiver:
     def update_data_s(self) -> None:  # same
         self._mongodb_second.update_data(self._data)
 
-    def tst_get_data(self) -> dict:
+    def snapshot(self) -> dict:
         result = self._mongodb_first.data_to_get()
         return result
 
-    def tst_cancel_data(self, data) -> None:
+    def cancel_data(self, data) -> None:
         self._mongodb_first.update_data(data)
 
 
@@ -51,38 +51,28 @@ class UpdateDataFirst:  # combine F and S?
 
     def __init__(self, receiver):
         self._receiver = receiver
+        self._snapshot = self._receiver.snapshot()
 
-    def snap(self):
-        snap = self._receiver.tst_get_data()
-        return snap
-
-    def execute(self) -> dict:
-        snap = self.snap()
+    def execute(self) -> None:
         self._receiver.update_data_f()
-        return snap
 
     def cancel(self) -> None:
-        snap = self.execute()
-        self._receiver.tst_cancel_data({'surname': 'blabla'})
+        snap = self._snapshot
+        self._receiver.cancel_data(snap)
 
 
 class UpdateDataSecond:  # same
 
     def __init__(self, receiver):
         self._receiver = receiver
+        self._snapshot = self._receiver.snapshot()
 
-    def snap(self):
-        snap = self._receiver.tst_get_data()
-        return snap
-
-    def execute(self) -> dict:
-        snap = self.snap()
+    def execute(self) -> None:
         self._receiver.update_data_s()
-        return snap
 
     def cancel(self) -> None:
-        snap = self.execute()
-        self._receiver.update_data_s(snap)
+        snap = self._snapshot
+        self._receiver.cancel_data(snap)
 
 
 class CancelData:  # only for testing?
@@ -138,24 +128,24 @@ if __name__ == '__main__':
     invoker = Invoker()
     mongo1 = MongoDb('mongodb://localhost:27015/')
     mongo2 = MongoDb('mongodb://localhost:27016/')
-    receiver_tst = Receiver(mongo1, mongo2, data_to_update)
+    receiver_tst = Repository(mongo1, mongo2, data_to_update)
 
     # create commands:
-    GET_DATA = GetData(receiver_tst)
-    UPD_DATA1 = UpdateDataFirst(receiver_tst)
-    UPD_DATA2 = UpdateDataSecond(receiver_tst)
-    CNL_DATA = CancelData(receiver_tst, data_initial)
+    get_data = GetData(receiver_tst)
+    upd_data1 = UpdateDataFirst(receiver_tst)
+    upd_data2 = UpdateDataSecond(receiver_tst)
+    cnl_data = CancelData(receiver_tst, data_initial)
 
     # register commands:
-    invoker.register('GET', GET_DATA)
-    invoker.register('UPD1', UPD_DATA1)
-    invoker.register('UPD2', UPD_DATA2)
-    invoker.register('UNDO', CNL_DATA)
+    invoker.register('GET', get_data)
+    invoker.register('UPD1', upd_data1)
+    invoker.register('UPD2', upd_data2)
+    invoker.register('UNDO', cnl_data)
 
     # execute catch non_exist_name in mongodb's
     try:
         # print(invoker.execute('GET'))
-        print(invoker.execute('UPD1'))
+        invoker.execute('UPD1')
         invoker.execute('UPD2')
     except ValueError:
         print('Wrong search params')
