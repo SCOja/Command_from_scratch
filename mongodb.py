@@ -17,7 +17,15 @@ class MongoDb:
             print('Done')
 
     def data_to_get(self):
-        result = self.collection.find_one({'name': 'John'})
+        pipeline = [
+            {'$match': {'name': 'John'}},
+            {'$project': {'surname': 1, '_id': 0}}
+        ]
+        result = []
+        aggregation = self.collection.aggregate(pipeline)
+        for user in aggregation:
+            result.append(user)
+        # result = self.collection.find_one({'name': 'John'})
         return result
 
     def correct_data(self, data):

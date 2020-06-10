@@ -28,20 +28,19 @@ class Receiver:
     """
 
     def __init__(self, first_mongodb: MongoDb, second_mongodb: MongoDb,
-                 data: dict, cancel_data: dict) -> None:
+                 data: dict) -> None:
         self._mongodb_first = first_mongodb
         self._mongodb_second = second_mongodb
         self._data = data
-        self._data2 = cancel_data
 
     def get_data(self) -> tuple:
         result1 = self._mongodb_first.data_to_get()
         result2 = self._mongodb_second.data_to_get()
         return result1, result2
 
-    def restore_data(self) -> tuple:  # change/del dat
-        result1 = self._mongodb_first.correct_data(self._data2)
-        result2 = self._mongodb_second.correct_data(self._data2)
+    def restore_data(self, data) -> tuple:  # change/del dat
+        result1 = self._mongodb_first.correct_data(data)
+        result2 = self._mongodb_second.correct_data(data)
         return result1, result2
 
     def update_data_f(self) -> None:  # combine _f and _s
@@ -80,11 +79,12 @@ class UpdateDataSecond(Command):  # same
 
 class CancelData(Command):  # only for testing?
 
-    def __init__(self, receiver):
+    def __init__(self, receiver, data):
         self._receiver = receiver
+        self._data = data
 
     def execute(self) -> None:
-        self._receiver.restore_data()
+        self._receiver.restore_data(self._data)
 
 
 class Invoker(Undo):
@@ -119,12 +119,8 @@ class Invoker(Undo):
                 return result
             else:
                 """ put something right here """
-                self._history = self._history[:self._history_position + 1]
-                self._history[self._history_position] = {
-                    time.time(): [command_name]
-                }
         else:
-            print(f'Command [{command_name}] not recognised')
+            print(f'Command [{command_name}] is not recognised')
 
 
 if __name__ == '__main__':
@@ -134,13 +130,13 @@ if __name__ == '__main__':
     invoker = Invoker()
     mongo1 = MongoDb('mongodb://localhost:27015/')
     mongo2 = MongoDb('mongodb://localhost:27016/')
-    receiver_tst = Receiver(mongo1, mongo2, data_to_update, data_initial)
+    receiver_tst = Receiver(mongo1, mongo2, data_to_update)
 
     # create commands:
     GET_DATA = GetData(receiver_tst)
     UPD_DATA1 = UpdateDataFirst(receiver_tst)
     UPD_DATA2 = UpdateDataSecond(receiver_tst)
-    CNL_DATA = CancelData(receiver_tst)
+    CNL_DATA = CancelData(receiver_tst, data_initial)
 
     # register commands:
     invoker.register('GET', GET_DATA)
@@ -156,6 +152,6 @@ if __name__ == '__main__':
     except ValueError:
         print('Wrong search params')
         invoker.undo()
-        # invoker.execute('UNDO')
+        invoker.execute('UNDO')
 
     print(invoker.history)
