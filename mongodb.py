@@ -1,7 +1,7 @@
 import pymongo
 
 
-class MongoDb:
+class MongoDB:
 
     def __init__(self, uri):
         self.uri = uri
@@ -25,13 +25,7 @@ class MongoDb:
         aggregation = self.collection.aggregate(pipeline)
         for user in aggregation:
             result = user
-        # result = self.collection.find_one({'name': 'John'})
         return result
-
-    def correct_data(self, data):
-        self.collection.update_one({'name': 'John'},
-                                   {'$set': data},
-                                   )
 
     def update_data(self, data):
         self.collection.update_one({'name': 'John'},
