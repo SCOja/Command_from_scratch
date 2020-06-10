@@ -21,10 +21,10 @@ class MongoDb:
             {'$match': {'name': 'John'}},
             {'$project': {'surname': 1, '_id': 0}}
         ]
-        result = []
+        result = {}
         aggregation = self.collection.aggregate(pipeline)
         for user in aggregation:
-            result.append(user)
+            result = user
         # result = self.collection.find_one({'name': 'John'})
         return result
 

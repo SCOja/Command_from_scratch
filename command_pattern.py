@@ -30,6 +30,13 @@ class Receiver:
     def update_data_s(self) -> None:  # same
         self._mongodb_second.update_data(self._data)
 
+    def tst_get_data(self) -> dict:
+        result = self._mongodb_first.data_to_get()
+        return result
+
+    def tst_cancel_data(self, data) -> None:
+        self._mongodb_first.update_data(data)
+
 
 class GetData:
 
@@ -45,8 +52,18 @@ class UpdateDataFirst:  # combine F and S?
     def __init__(self, receiver):
         self._receiver = receiver
 
-    def execute(self) -> None:
+    def snap(self):
+        snap = self._receiver.tst_get_data()
+        return snap
+
+    def execute(self) -> dict:
+        snap = self.snap()
         self._receiver.update_data_f()
+        return snap
+
+    def cancel(self) -> None:
+        snap = self.execute()
+        self._receiver.tst_cancel_data({'surname': 'blabla'})
 
 
 class UpdateDataSecond:  # same
@@ -54,8 +71,18 @@ class UpdateDataSecond:  # same
     def __init__(self, receiver):
         self._receiver = receiver
 
-    def execute(self) -> None:
+    def snap(self):
+        snap = self._receiver.tst_get_data()
+        return snap
+
+    def execute(self) -> dict:
+        snap = self.snap()
         self._receiver.update_data_s()
+        return snap
+
+    def cancel(self) -> None:
+        snap = self.execute()
+        self._receiver.update_data_s(snap)
 
 
 class CancelData:  # only for testing?
@@ -83,11 +110,11 @@ class Invoker:
         self._commands[command_name] = command
 
     def undo(self):
-        if self._history_position > 0:
+        if self._history_position > 1:
             self._history_position -= 1
             self._commands[
                 self._history[self._history_position][1]
-            ].execute()
+            ].cancel()
         else:
             print("nothing to undo")
 
@@ -127,12 +154,12 @@ if __name__ == '__main__':
 
     # execute catch non_exist_name in mongodb's
     try:
-        print(invoker.execute('GET'))
-        invoker.execute('UPD1')
+        # print(invoker.execute('GET'))
+        print(invoker.execute('UPD1'))
         invoker.execute('UPD2')
     except ValueError:
         print('Wrong search params')
         invoker.undo()
-        invoker.execute('UNDO')
+        # invoker.execute('UNDO')
 
     print(invoker.history)
