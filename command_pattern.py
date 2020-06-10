@@ -1,24 +1,5 @@
-from abc import ABC, abstractmethod
 from mongodb import MongoDb
 import time
-
-
-class Command(ABC):
-    """source"""
-    @abstractmethod
-    def execute(self) -> None:
-        pass
-
-
-class Undo(ABC):
-    """source"""
-    @abstractmethod
-    def history(self):
-        pass
-
-    @abstractmethod
-    def undo(self):
-        pass
 
 
 class Receiver:
@@ -50,7 +31,7 @@ class Receiver:
         self._mongodb_second.update_data(self._data)
 
 
-class GetData(Command):
+class GetData:
 
     def __init__(self, receiver):
         self._receiver = receiver
@@ -59,7 +40,7 @@ class GetData(Command):
         return self._receiver.get_data()
 
 
-class UpdateDataFirst(Command):  # combine F and S?
+class UpdateDataFirst:  # combine F and S?
 
     def __init__(self, receiver):
         self._receiver = receiver
@@ -68,7 +49,7 @@ class UpdateDataFirst(Command):  # combine F and S?
         self._receiver.update_data_f()
 
 
-class UpdateDataSecond(Command):  # same
+class UpdateDataSecond:  # same
 
     def __init__(self, receiver):
         self._receiver = receiver
@@ -77,7 +58,7 @@ class UpdateDataSecond(Command):  # same
         self._receiver.update_data_s()
 
 
-class CancelData(Command):  # only for testing?
+class CancelData:  # only for testing?
 
     def __init__(self, receiver, data):
         self._receiver = receiver
@@ -87,7 +68,7 @@ class CancelData(Command):  # only for testing?
         self._receiver.restore_data(self._data)
 
 
-class Invoker(Undo):
+class Invoker:
 
     def __init__(self):
         self._commands = {}
