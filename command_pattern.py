@@ -3,7 +3,7 @@ from mongodb import MongoDB
 
 class Repository:
     """
-    Receiver mongodb functions: get, snap, update, restore.
+    Receiver mongodb functions: snap, update, restore.
     """
 
     def __init__(self, mongodb: MongoDB, data: dict) -> None:
@@ -38,40 +38,32 @@ class UpdateData:
 class Invoker:
 
     def __init__(self):
-        self._commands = {}
-        self.history = ['Start']
-        self.history_position = 0  # The position that is used for UNDO
+        self._commands = []
+        self.history = []
 
     def history(self):
         return self.history
 
-    def register(self, command_name, command):
-        self._commands[command_name] = command
+    def register(self, command):
+        self._commands.append(command)
 
     def undo(self) -> None:
-        if self.history_position > 1:
-            self.history_position -= 1
-            self._commands[
-                self.history[self.history_position]
-            ].cancel()
+        if len(self.history) > 0:
+            for command in self.history:
+                command.cancel()
         else:
             print("nothing to undo")
 
-    def execute(self, command_name) -> None:
-        if command_name in self._commands.keys():
-            self.history_position += 1
-            self._commands[command_name].execute()
-            if len(self.history) == self.history_position:
-                self.history.append(command_name)
-            else:
-                """ put something right here """
+    def execute(self, command) -> None:
+        if command in self._commands:
+            command.execute()
+            self.history.append(command)
         else:
-            print(f'Command [{command_name}] is not recognised')
+            print(f'Command [{command}] is not recognised')
 
 
 if __name__ == '__main__':
 
-    data_initial = {'surname': 'Doe'}
     data_to_update = {'surname': 'Doe changed'}
     invoker = Invoker()
     mongo1 = MongoDB('mongodb://localhost:27015/')
@@ -84,13 +76,13 @@ if __name__ == '__main__':
     upd_data2 = UpdateData(receiver_two)
 
     # register commands:
-    invoker.register('UPD1', upd_data1)
-    invoker.register('UPD2', upd_data2)
+    invoker.register(upd_data1)
+    invoker.register(upd_data2)
 
     # execute catch non_exist_name in mongodb's
     try:
-        invoker.execute('UPD1')
-        invoker.execute('UPD2')
+        invoker.execute(upd_data1)
+        invoker.execute(upd_data2)
     except ValueError:
         print('Wrong search params')
         invoker.undo()
